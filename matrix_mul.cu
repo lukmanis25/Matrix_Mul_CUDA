@@ -13,6 +13,7 @@ typedef struct {
 
 // Thread block size
 #define BLOCK_SIZE 16
+#define FIXED_VALUE 2.0f
 
 // Forward declaration of the matrix multiplication kernel
 __global__ void MatMulKernel(const Matrix, const Matrix, Matrix);
@@ -77,9 +78,26 @@ void fillMatrixRandom(Matrix &matrix) {
     }
 }
 
+// Funkcja do wypełniania macierzy stałą wartością
+void fillMatrixFixed(Matrix &matrix, float value) {
+    for (int i = 0; i < matrix.width * matrix.height; i++) {
+        matrix.elements[i] = value;
+    }
+}
+
+// Funkcja do wypisywania macierzy
+void printMatrix(const Matrix &matrix) {
+    for (int i = 0; i < matrix.height; i++) {
+        for (int j = 0; j < matrix.width; j++) {
+            printf("%f ", matrix.elements[i * matrix.width + j]);
+        }
+        printf("\n");
+    }
+}
+
 int main(int argc, char* argv[]) {
-    if (argc != 4) {
-        printf("Użycie: %s <n> <m> <k>\n", argv[0]);
+    if (argc < 4 || argc > 6) {
+        printf("Użycie: %s <n> <m> <k> [print] [fixed]\n", argv[0]);
         return 1;
     }
 
@@ -87,6 +105,8 @@ int main(int argc, char* argv[]) {
     int n = atoi(argv[1]);
     int m = atoi(argv[2]);
     int k = atoi(argv[3]);
+    bool printResult = (argc >= 5 && strcmp(argv[4], "print") == 0);
+    bool useFixedValues = (argc == 6 && strcmp(argv[5], "fixed") == 0);
 
     // Sprawdzenie poprawności wymiarów (muszą być wielokrotnościami BLOCK_SIZE)
     if (n % BLOCK_SIZE != 0 || m % BLOCK_SIZE != 0 || k % BLOCK_SIZE != 0) {
@@ -108,9 +128,14 @@ int main(int argc, char* argv[]) {
     // Inicjalizacja generatora liczb losowych
     srand(time(0));
 
-    // Wypełnienie macierzy A i B losowymi wartościami
-    fillMatrixRandom(A);
-    fillMatrixRandom(B);
+    // Wypełnienie macierzy A i B odpowiednio
+    if (useFixedValues) {
+        fillMatrixFixed(A, FIXED_VALUE);
+        fillMatrixFixed(B, FIXED_VALUE);
+    } else {
+        fillMatrixRandom(A);
+        fillMatrixRandom(B);
+    }
 
     // Tworzenie zdarzeń CUDA do mierzenia czasu
     cudaEvent_t start, stop;
@@ -131,6 +156,11 @@ int main(int argc, char* argv[]) {
     float milliseconds = 0;
     cudaEventElapsedTime(&milliseconds, start, stop);
     printf("Czas wykonania mnożenia macierzy na GPU: %f ms\n", milliseconds);
+    printf("Wymiary wynikowa macierz C: %d x %d\n", C.height, C.width);
+    // Opcjonalne wypisanie wynikowej macierzy
+    if (printResult) {
+        printMatrix(C);
+    }
 
     // Zwolnienie pamięci
     free(A.elements);

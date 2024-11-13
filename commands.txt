@@ -1,2 +1,6 @@
 nvcc -o matrix_mul matrix_mul.cu
-./matrix_mul 1024 512 1024
+./matrix_mul 1024 512 1024 
+./matrix_mul 8000 8000 8000
+./matrix_mul 12800 12800 12800
+
+./matrix_mul 16 16 16 print fixed
