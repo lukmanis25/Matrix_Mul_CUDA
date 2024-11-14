@@ -63,6 +63,10 @@ void MatMul(const Matrix matA, const Matrix matB, Matrix matC)
     cudaFree(devMatC.elements);
 }
 
+
+/***************
+**TESTING CODE**
+****************/
 void fillMatrixRandom(Matrix &matrix) {
     for (int i = 0; i < matrix.width * matrix.height; i++) {
         matrix.elements[i] = static_cast<float>(rand()) / RAND_MAX; // Losowe wartości między 0 a 1

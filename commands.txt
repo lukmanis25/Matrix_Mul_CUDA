@@ -2,9 +2,19 @@ nvcc -o matrix_mul matrix_mul.cu
 ./matrix_mul 1024 512 1024 
 ./matrix_mul 8000 8000 8000
 ./matrix_mul 12800 12800 12800
+./matrix_mul 25600 25600 25600
 ./matrix_mul 10000 10000 10000
 
 ./matrix_mul 16 16 16 print fixed
 ./matrix_mul 2 2 2 print fixed
 
 (dla fixed i macierzy kwadratowych powinny wyjść n x 2)
+
+./matrix_mul_v2 1024 512 1024 
+./matrix_mul_v2 8000 8000 8000
+./matrix_mul_v2 12800 12800 12800
+./matrix_mul_v2 25600 25600 25600
+./matrix_mul_v2 10000 10000 10000
+
+./matrix_mul_v2 16 16 16 print fixed
+./matrix_mul_v2 2 2 2 print fixed
