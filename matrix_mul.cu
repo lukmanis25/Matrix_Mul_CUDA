@@ -13,52 +13,54 @@ typedef struct {
 #define FIXED_VALUE 2.0f
 #define BLOCK_SIZE 16
 
-__global__ void MatMulKernel(const Matrix, const Matrix, Matrix);
-
-void MatMul(const Matrix A, const Matrix B, Matrix C)
+__global__ void CalcMatOneEleKernel(Matrix matA, Matrix matB, Matrix matC)
 {
-    Matrix d_A;
-    d_A.width = A.width; d_A.height = A.height;
-    size_t size = A.width * A.height * sizeof(float);
-    cudaMalloc(&d_A.elements, size);
-    cudaMemcpy(d_A.elements, A.elements, size,
-               cudaMemcpyHostToDevice);
-    Matrix d_B;
-    d_B.width = B.width; d_B.height = B.height;
-    size = B.width * B.height * sizeof(float);
-    cudaMalloc(&d_B.elements, size);
-    cudaMemcpy(d_B.elements, B.elements, size,
-               cudaMemcpyHostToDevice);
+    float sum = 0.0f;
+    int rowIdx = blockIdx.y * blockDim.y + threadIdx.y;
+    int colIdx = blockIdx.x * blockDim.x + threadIdx.x;
 
-    Matrix d_C;
-    d_C.width = C.width; d_C.height = C.height;
-    size = C.width * C.height * sizeof(float);
-    cudaMalloc(&d_C.elements, size);
-
-    dim3 dimBlock(BLOCK_SIZE, BLOCK_SIZE);
-    dim3 dimGrid((B.width + dimBlock.x - 1) / dimBlock.x, (A.height + dimBlock.y - 1) / dimBlock.y);
-    MatMulKernel<<<dimGrid, dimBlock>>>(d_A, d_B, d_C);
-
-    cudaMemcpy(C.elements, d_C.elements, size,
-               cudaMemcpyDeviceToHost);
-
-    cudaFree(d_A.elements);
-    cudaFree(d_B.elements);
-    cudaFree(d_C.elements);
+    if (rowIdx < matC.height && colIdx < matC.width) {
+        for (int i = 0; i < matA.width; ++i) {
+            sum += matA.elements[rowIdx * matA.width + i] * matB.elements[i * matB.width + colIdx];
+        }
+        matC.elements[rowIdx * matC.width + colIdx] = sum;
+    }
 }
 
-__global__ void MatMulKernel(Matrix A, Matrix B, Matrix C)
-{
-    float Cvalue = 0;
-    int row = blockIdx.y * blockDim.y + threadIdx.y;
-    int col = blockIdx.x * blockDim.x + threadIdx.x;
 
-    if (row < C.height && col < C.width) {
-        for (int e = 0; e < A.width; ++e) {
-            Cvalue += A.elements[row * A.width + e] * B.elements[e * B.width + col];
-        }
-        C.elements[row * C.width + col] = Cvalue;
-    }
+void MatMul(const Matrix matA, const Matrix matB, Matrix matC)
+{
+    Matrix devMatA;
+    devMatA.width = matA.width;
+    devMatA.height = matA.height;
+    size_t size = matA.width * matA.height * sizeof(float);
+    cudaMalloc(&devMatA.elements, size);
+    cudaMemcpy(devMatA.elements, matA.elements, size, cudaMemcpyHostToDevice);
+
+    Matrix devMatB;
+    devMatB.width = matB.width;
+    devMatB.height = matB.height;
+    size = matB.width * matB.height * sizeof(float);
+    cudaMalloc(&devMatB.elements, size);
+    cudaMemcpy(devMatB.elements, matB.elements, size, cudaMemcpyHostToDevice);
+
+    Matrix devMatC;
+    devMatC.width = matC.width;
+    devMatC.height = matC.height;
+    size = matC.width * matC.height * sizeof(float);
+    cudaMalloc(&devMatC.elements, size);
+
+    dim3 threadsPerBlock(BLOCK_SIZE, BLOCK_SIZE);
+    dim3 blocksPerGrid((matB.width + threadsPerBlock.x - 1) / threadsPerBlock.x,
+                       (matA.height + threadsPerBlock.y - 1) / threadsPerBlock.y);
+
+    CalcMatOneEleKernel<<<blocksPerGrid, threadsPerBlock>>>(devMatA, devMatB, devMatC);
+
+    cudaMemcpy(matC.elements, devMatC.elements, size, cudaMemcpyDeviceToHost);
+
+    cudaFree(devMatA.elements);
+    cudaFree(devMatB.elements);
+    cudaFree(devMatC.elements);
 }
 
 void fillMatrixRandom(Matrix &matrix) {
