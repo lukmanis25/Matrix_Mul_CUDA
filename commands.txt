@@ -4,6 +4,7 @@ nvcc -o matrix_mul matrix_mul.cu
 ./matrix_mul 12800 12800 12800
 ./matrix_mul 25600 25600 25600
 ./matrix_mul 10000 10000 10000
+./matrix_mul 30000 30000 30000
 
 ./matrix_mul 16 16 16 print fixed
 ./matrix_mul 2 2 2 print fixed
@@ -17,6 +18,19 @@ nvcc -o matrix_mul_v2 matrix_mul_v2.cu
 ./matrix_mul_v2 12800 12800 12800
 ./matrix_mul_v2 25600 25600 25600
 ./matrix_mul_v2 10000 10000 10000
+./matrix_mul_v2 30000 30000 30000
 
 ./matrix_mul_v2 16 16 16 print fixed
 ./matrix_mul_v2 2 2 2 print fixed
+
+WYNIKI:
+27107.630859 ms
+26765.824219 ms
+27130.378906 ms
+27208.125000 ms
+26869.710938 ms
+27049.912109 ms
+26854.500000 ms
+27174.730469 ms
+27192.105469 ms
+27054.693359 ms
