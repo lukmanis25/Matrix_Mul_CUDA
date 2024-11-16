@@ -68,33 +68,53 @@ __device__ void SetElement(Matrix mat, int row, int col, float value)
 
 void MatMul(const Matrix matA, const Matrix matB, Matrix matC)
 {
-    Matrix devMatA;
-    devMatA.width = devMatA.stride = matA.width;
-    devMatA.height = matA.height;
-    size_t bytesA = matA.width * matA.height * sizeof(float);
-    cudaMalloc(&devMatA.elements, bytesA);
-    cudaMemcpy(devMatA.elements, matA.elements, bytesA, cudaMemcpyHostToDevice);
+    int paddedWidthA = ((matA.width + BLOCK_SIZE - 1) / BLOCK_SIZE) * BLOCK_SIZE;
+    int paddedHeightA = ((matA.height + BLOCK_SIZE - 1) / BLOCK_SIZE) * BLOCK_SIZE;
+    int paddedWidthB = ((matB.width + BLOCK_SIZE - 1) / BLOCK_SIZE) * BLOCK_SIZE;
+    int paddedHeightB = ((matB.height + BLOCK_SIZE - 1) / BLOCK_SIZE) * BLOCK_SIZE;
+    int paddedWidthC = ((matC.width + BLOCK_SIZE - 1) / BLOCK_SIZE) * BLOCK_SIZE;
+    int paddedHeightC = ((matC.height + BLOCK_SIZE - 1) / BLOCK_SIZE) * BLOCK_SIZE;
 
+    Matrix devMatA;
+    devMatA.width = paddedWidthA;
+    devMatA.height = paddedHeightA;
+    devMatA.stride = paddedWidthA;
+    size_t bytesA = paddedWidthA * paddedHeightA * sizeof(float);
+    cudaMalloc(&devMatA.elements, bytesA);
+    cudaMemset(devMatA.elements, 0, bytesA);
+    
     Matrix devMatB;
-    devMatB.width = devMatB.stride = matB.width;
-    devMatB.height = matB.height;
-    size_t bytesB = matB.width * matB.height * sizeof(float);
+    devMatB.width = paddedWidthB;
+    devMatB.height = paddedHeightB;
+    devMatB.stride = paddedWidthB;
+    size_t bytesB = paddedWidthB * paddedHeightB * sizeof(float);
     cudaMalloc(&devMatB.elements, bytesB);
-    cudaMemcpy(devMatB.elements, matB.elements, bytesB, cudaMemcpyHostToDevice);
+    cudaMemset(devMatB.elements, 0, bytesB);
 
     Matrix devMatC;
-    devMatC.width = devMatC.stride = matC.width;
-    devMatC.height = matC.height;
-    size_t bytesC = matC.width * matC.height * sizeof(float);
+    devMatC.width = paddedWidthC;
+    devMatC.height = paddedHeightC;
+    devMatC.stride = paddedWidthC;
+    size_t bytesC = paddedWidthC * paddedHeightC * sizeof(float);
     cudaMalloc(&devMatC.elements, bytesC);
+    cudaMemset(devMatC.elements, 0, bytesC);
+
+    for (int i = 0; i < matA.height; ++i) {
+        cudaMemcpy(&devMatA.elements[i * devMatA.stride], &matA.elements[i * matA.width], matA.width * sizeof(float), cudaMemcpyHostToDevice);
+    }
+    for (int i = 0; i < matB.height; ++i) {
+        cudaMemcpy(&devMatB.elements[i * devMatB.stride], &matB.elements[i * matB.width], matB.width * sizeof(float), cudaMemcpyHostToDevice);
+    }
 
     dim3 threadsPerBlock(BLOCK_SIZE, BLOCK_SIZE);
-    dim3 blocksPerGrid((matB.width + threadsPerBlock.x - 1) / threadsPerBlock.x,
-                       (matA.height + threadsPerBlock.y - 1) / threadsPerBlock.y);
+    dim3 blocksPerGrid((paddedWidthC + BLOCK_SIZE - 1) / BLOCK_SIZE,
+                       (paddedHeightC + BLOCK_SIZE - 1) / BLOCK_SIZE);
 
     CalcMatMulKernel<<<blocksPerGrid, threadsPerBlock>>>(devMatA, devMatB, devMatC);
 
-    cudaMemcpy(matC.elements, devMatC.elements, bytesC, cudaMemcpyDeviceToHost);
+    for (int i = 0; i < matC.height; ++i) {
+        cudaMemcpy(&matC.elements[i * matC.width], &devMatC.elements[i * devMatC.stride], matC.width * sizeof(float), cudaMemcpyDeviceToHost);
+    }
 
     cudaFree(devMatA.elements);
     cudaFree(devMatB.elements);

@@ -10,7 +10,7 @@ nvcc -o matrix_mul matrix_mul.cu
 
 (dla fixed i macierzy kwadratowych powinny wyjść n x 2)
 
-nvcc -o matrix_mul matrix_mul_v2.cu
+nvcc -o matrix_mul_v2 matrix_mul_v2.cu
 
 ./matrix_mul_v2 1024 512 1024 
 ./matrix_mul_v2 8000 8000 8000
