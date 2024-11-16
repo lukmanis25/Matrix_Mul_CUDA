@@ -13,7 +13,7 @@ typedef struct {
 #define FIXED_VALUE 2.0f
 #define BLOCK_SIZE 16
 
-__global__ void CalcMatOneEleKernel(Matrix matA, Matrix matB, Matrix matC)
+__global__ void CalcMatMulKernel(Matrix matA, Matrix matB, Matrix matC)
 {
     float sum = 0.0f;
     int rowIdx = blockIdx.y * blockDim.y + threadIdx.y;
@@ -54,7 +54,7 @@ void MatMul(const Matrix matA, const Matrix matB, Matrix matC)
     dim3 blocksPerGrid((matB.width + threadsPerBlock.x - 1) / threadsPerBlock.x,
                        (matA.height + threadsPerBlock.y - 1) / threadsPerBlock.y);
 
-    CalcMatOneEleKernel<<<blocksPerGrid, threadsPerBlock>>>(devMatA, devMatB, devMatC);
+    CalcMatMulKernel<<<blocksPerGrid, threadsPerBlock>>>(devMatA, devMatB, devMatC);
 
     cudaMemcpy(matC.elements, devMatC.elements, size, cudaMemcpyDeviceToHost);
 
