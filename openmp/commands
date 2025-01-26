@@ -1,0 +1,2 @@
+gcc -fopenmp -o matrix_mul matrix_mul.c
+gcc -fopenmp -o matrix_mul_basic matrix_mul_basic.c
